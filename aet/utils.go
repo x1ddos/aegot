@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os/exec"
-	"os"
-	"strings"
 	"io"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 )
 
 func runCmd(args []string, f func(*exec.Cmd)) {
@@ -22,7 +22,7 @@ func runCmd(args []string, f func(*exec.Cmd)) {
 func appendToPathList(env []string, key, val string) []string {
 	var (
 		existingVal string
-		idx = -1
+		idx         = -1
 	)
 	keyPrefx := key + "="
 	for i, ev := range env {
@@ -35,7 +35,7 @@ func appendToPathList(env []string, key, val string) []string {
 	if idx >= 0 {
 		env[idx] = keyPrefx + existingVal + string(os.PathListSeparator) + val
 	} else {
-		env = append(env, keyPrefx + val)
+		env = append(env, keyPrefx+val)
 	}
 	return env
 }
@@ -47,13 +47,13 @@ func isExist(path string) bool {
 
 func copyFile(src, dst string) (err error) {
 	s, err := os.Open(src)
-    if err != nil {
-            return err
-    }
-    d, err := os.Create(dst)
-    if err != nil {
-            return err
-    }
-    _, err = io.Copy(d, s)
-    return
+	if err != nil {
+		return err
+	}
+	d, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(d, s)
+	return
 }

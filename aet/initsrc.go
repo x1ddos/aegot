@@ -2,33 +2,33 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"log"
-	"os/exec"
-	"strings"
-	"path/filepath"
-	"net/http"
 	"io/ioutil"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 const (
-	patchesUrl = "https://raw.github.com/crhym3/aegot/master/patches/"
+	patchesUrl     = "https://raw.github.com/crhym3/aegot/master/patches/"
 	defaultRepoUrl = "https://code.google.com/p/appengine-go/"
-	defaultVer = "1.8.0"
+	defaultVer     = "1.8.0"
 	// Revision, url and dest dir are appended in parseArgs().
 	// Complete cmd will look like this: "hg clone -u rev URL appengineDir"
-	defaultCloneCmd = "hg clone -u"
+	defaultCloneCmd  = "hg clone -u"
 	defaultUpdateCmd = "hg update -r"
 )
 
 var (
-	repoUrl string
-	repoRev string
-	cloneCmd string
+	repoUrl   string
+	repoRev   string
+	cloneCmd  string
 	updateCmd string
 
 	// Relative to "appengineDir/src"
-	api_dev_dot_go    = filepath.Join("appengine_internal", "api_dev.go")
+	api_dev_dot_go = filepath.Join("appengine_internal", "api_dev.go")
 
 	// App Engine Go release version => repo revision map.
 	// These are taken from defaultRepoUrl.
@@ -53,7 +53,7 @@ func initSourcesCommand() {
 	// clone appengine-go repo
 	var (
 		cmd []string
-		f func(*exec.Cmd)
+		f   func(*exec.Cmd)
 	)
 	if isExist(srcDir) {
 		cmd = []string{updateCmd, repoRev}
@@ -69,15 +69,15 @@ func initSourcesCommand() {
 
 	// "patch" api_dev.go
 	log.Printf("Patching %s with %s", api_dev_dot_go, patchedFile)
-	val := <- ch
+	val := <-ch
 	if err, isErr := val.(error); isErr {
 		log.Fatal(err)
 	}
 	file, err := os.Create(api_dev_dot_go)
-    if err != nil {
-        log.Fatal(err)
-    }
-    if _, err := file.Write(val.([]byte)); err != nil {
+	if err != nil {
+		log.Fatal(err)
+	}
+	if _, err := file.Write(val.([]byte)); err != nil {
 		log.Fatal(err)
 	}
 
@@ -86,7 +86,7 @@ func initSourcesCommand() {
 		goTestInstall := []string{"go", "test", "-i"}
 		goTestInstall = append(goTestInstall, flags.Args()[1:]...)
 		log.Print(goTestInstall)
-		runCmd(goTestInstall, func(c *exec.Cmd){
+		runCmd(goTestInstall, func(c *exec.Cmd) {
 			c.Env = appendToPathList(os.Environ(), "GOPATH", appengineDir)
 		})
 	}

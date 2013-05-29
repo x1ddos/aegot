@@ -1,18 +1,17 @@
 package main
 
 import (
-	"log"
-	"path/filepath"
-	"os"
 	"flag"
-	"strings"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-
 var (
-	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
-	commands = map[string]func() {
+	flags    = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	commands = map[string]func(){
 		"init": initSourcesCommand,
 		"test": runTestsCommand,
 	}
@@ -23,7 +22,7 @@ var (
 func main() {
 	parseArgs()
 	action := strings.ToLower(flags.Arg(0))
-	cmd, ok := commands[action];
+	cmd, ok := commands[action]
 	if !ok {
 		log.Fatalf("Unknown action %q", action)
 	}

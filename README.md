@@ -1,7 +1,7 @@
 App Engine for Go Testing
 =====
 
-Utils for running tests on packages that import (directly or indirectly) "appengine/*" packages.
+Utils for testing apps that import (directly or indirectly) "appengine/*" packages.
 
 Why
 ===
@@ -34,9 +34,9 @@ func TestListTopics(t *testing.T) {
 }
 ```
 
-Well, if you try running `go test ./myapp` it won't even get to try running the tests because Go won't be able to build your app & tests. It'll say something like "Can't import 'appengine'" package. That's because "appengine/*" are indeed in a different location (specifically, in SDK/goroot/src/pkg/).
+Well, if you try executing `go test ./myapp` it won't even get to running the tests because Go won't be able to build your app & tests. It'll say something like "Can't import 'appengine'" package. That's because "appengine/*" are indeed in a different location (specifically, in SDK/goroot/src/pkg/).
 
-You could symlink SDK/goroot/src/pkg/appengine to your GOROOT/src/appengine but that probably won't solve the problem:
+You could symlink SDK/goroot/src/pkg/appengine to your GOROOT/src/appengine but that probably won't solve all the problems:
 
   - go test won't be able to build appengine package (so that later tests would run quicker)
   - SDK contains the whole Go release, but slightly modified, so you'll definitely bump into issues like "Undefined os.DisableWritesForAppEngine" because indeed, DisableWritesForAppEngine exists only in this specific Go version for App Engine.
@@ -65,6 +65,17 @@ The sample test from the above will be able to run with `aet test ./myapp`, whic
 It only manipulates GOPATH env variable and adds appengine-go local clone path to it.
 So, alternatively, tests can be run with `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
 
+```sh
+$ aet -h
+
+Usage: aet {init|test} [flags] ./path/to/*_test.go
+  -c="hg clone -u": command to clone the repo; don't specify rev, url or d here
+  -d="/Users/alex/go/src/appengine-go": expect appengine-go sources to be in d/src; required
+  -rev="1.8.0": App Engine release version or repo revision; required for init
+  -uc="hg update -r": command to update previously clonned repo
+  -url="https://code.google.com/p/appengine-go/": appengine-go project repository URL
+
+```
 
 Alternatives
 ===

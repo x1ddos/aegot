@@ -8,7 +8,7 @@ import (
 func runTestsCommand() {
 	goTest := []string{"go", "test"}
 	goTest = append(goTest, flags.Args()[1:]...)
-	runCmd(goTest, func(c *exec.Cmd){
+	runCmd(goTest, func(c *exec.Cmd) {
 		c.Env = appendToPathList(os.Environ(), "GOPATH", appengineDir)
 	})
 }
