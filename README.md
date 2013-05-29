@@ -34,16 +34,16 @@ func TestListTopics(t *testing.T) {
 }
 ```
 
-Well, if you try executing `go test ./myapp` it won't even get to running the tests because Go won't be able to build your app & tests. It'll say something like "Can't import 'appengine'" package. That's because "appengine/*" are indeed in a different location (specifically, in SDK/goroot/src/pkg/).
+Well, if you try executing `go test ./myapp` it won't even get to running the tests because Go won't be able to build your app & tests. It'll say something like "Can't import 'appengine'" package. That's because "appengine/*" packages are indeed in a different location (specifically, in SDK/goroot/src/pkg/).
 
-You could symlink SDK/goroot/src/pkg/appengine to your GOROOT/src/appengine but that probably won't solve all the problems:
+You could symlink SDK/goroot/src/pkg/appengine to your GOPATH/src/appengine but that probably won't solve all the problems:
 
   - go test won't be able to build appengine package (so that later tests would run quicker)
   - SDK contains the whole Go release, but slightly modified, so you'll definitely bump into issues like "Undefined os.DisableWritesForAppEngine" because indeed, DisableWritesForAppEngine exists only in this specific Go version for App Engine.
 
 So, this little project tries to solve these problems.
 
-Instead of using Go version of the SDK (you've probably downloaded from https://developers.google.com/appengine/downloads), this tool will:
+Instead of using Go version of App Engine for Go SDK, this tool will:
 
   * clone the original source files from code.google.com/p/appengine-go
   * apply a patch to one specific file (appengine\_internal/api\_dev.go)
@@ -61,9 +61,9 @@ Let's say I'm in my app root which has a subdir called "myapp" (from the example
     - fetch a patched version of api_dev.go and overwrite the original file
     - tell Go to build appengine packages with "go test -i ./myapp" (if ./myapp argument was provided)
 
-The sample test from the above will be able to run with `aet test ./myapp`, which actually doesn't do much.
+Sample test from the above will be able to run now with `aet test ./myapp`, but "aet test" doesn't do much actually.
 It only manipulates GOPATH env variable and adds appengine-go local clone path to it.
-So, alternatively, tests can be run with `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
+So, alternatively, tests can be run with e.g. `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
 
 ```sh
 $ aet -h
