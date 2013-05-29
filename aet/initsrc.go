@@ -81,6 +81,8 @@ func initSourcesCommand() {
 		log.Fatal(err)
 	}
 
+	msg := "Done!"
+
 	// build appengine-go packages to speed up later tests
 	if flags.NArg() > 1 {
 		goTestInstall := []string{"go", "test", "-i"}
@@ -89,9 +91,11 @@ func initSourcesCommand() {
 		runCmd(goTestInstall, func(c *exec.Cmd) {
 			c.Env = appendToPathList(os.Environ(), "GOPATH", appengineDir)
 		})
+		msg += (" Try running 'aet test -v " +
+			strings.Join(flags.Args()[1:], " ") + "'")
 	}
 
-	log.Print("Done! Try running 'make test'.")
+	log.Print(msg)
 }
 
 func checkInitSrcArgs() {
