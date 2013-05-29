@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	patchesUrl = "https://raw.github.com/crhym3/aegot/master/patches"
+	patchesUrl = "https://raw.github.com/crhym3/aegot/master/patches/"
 	defaultRepoUrl = "https://code.google.com/p/appengine-go/"
 	defaultVer = "1.8.0"
 	// Revision, url and dest dir are appended in parseArgs().
@@ -122,6 +122,10 @@ func fetchPatch(patchName string, c chan interface{}) {
 		return
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		c <- fmt.Errorf("Bad response code (%d) from %s", resp.StatusCode, url)
+		return
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		c <- err
