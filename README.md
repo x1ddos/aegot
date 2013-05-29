@@ -43,24 +43,27 @@ You could symlink SDK/goroot/src/pkg/appengine to your GOROOT/src/appengine but 
 
 So, this little project tries to solve these problems.
 
-Instead of using built Go version of the SDK you've probably downloaded from https://developers.google.com/appengine/downloads, this tool will:
+Instead of using Go version of the SDK (you've probably downloaded from https://developers.google.com/appengine/downloads), this tool will:
 
-  # clone the original source files from code.google.com/p/appengine-go
-  # apply a patch to one specific file (appengine_internal/api_dev.go)
-  # build appengine packages to speedup later tests with "go test -i ..."
+  * clone the original source files from code.google.com/p/appengine-go
+  * apply a patch to one specific file (appengine\_internal/api\_dev.go)
+  * build appengine packages to speedup later tests with "go test -i ..."
+
 
 Usage
 ===
 
 Let's say I'm in my app root which has a subdir called "myapp" (from the example above). You only need to do this once:
 
-  # Install "aet" tool: `go get github.com/crhym3/aegot/aet`
-  # Init: `aet init ./myapp`, which will do a couple things:
+  * Install "aet" tool: `go get github.com/crhym3/aegot/aet`
+  * Init: `aet init ./myapp`, which will do a couple things:
     - hg clone code.google.com/p/appengine-go
     - fetch a patched version of api_dev.go and overwrite the original file
     - tell Go to build appengine packages with "go test -i ./myapp" (if ./myapp argument was provided)
 
-The sample test from the above will be able to run with `aet test ./myapp`, which actually doesn't do much. It only manipulates GOPATH env variable and adds appengine-go local clone path to it. So, alternatively, tests can be run with `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
+The sample test from the above will be able to run with `aet test ./myapp`, which actually doesn't do much.
+It only manipulates GOPATH env variable and adds appengine-go local clone path to it.
+So, alternatively, tests can be run with `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
 
 
 Alternatives
