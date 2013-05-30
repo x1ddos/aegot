@@ -4,8 +4,6 @@ Utils for testing apps that import (directly or indirectly) "appengine/*" packag
 
 ## Why
 
----
-
 Let's say you have a Go app that looks something like this:
 
 ```go
@@ -52,8 +50,6 @@ Instead of using Go version of App Engine for Go SDK, this tool will:
 
 ## Usage
 
----
-
 Let's say I'm in my app root which has a subdir called "myapp" (from the example above). You only need to do this once:
 
   * Install "aet" tool: `go get github.com/crhym3/aegot/aet`
@@ -79,8 +75,6 @@ Usage: aet {init|test} [flags] ./path/to/*_test.go
 ```
 
 ## Testutils
-
----
 
 There's small colletion of methods that work sort of like proxies to
 appengine_internal which you can use to stub out App Engine internal RPCs.
@@ -221,6 +215,30 @@ func TestGetErrors(t *testing.T) {
 ```
 
 So, that was easy.
+
+What's happening here is when you run the app with dev\_appserver, only these
+files will be used to build the app:
+
+* items.go
+* handlers.go
+
+handlers_test.go is skipped because it ends with "\_test.go", and items\_stub.go
+is ignored because it has `// +build !appengine` tag at the beginning of file
+which tells go-app-builder to ignore it when building an app for App Engine.
+
+Now, when you run `aet test ./myapp` (or `GOPATH=... go test ./myapp`),
+these files will be used to build the app + tests:
+
+* items_stub.go
+* handlers.go
+* handlers_test.go
+
+items.go is ignored because it has `// +build appengine` tag and since the
+tag is not present when you run go test (see `go help build` for -tags option)
+it'll skip the file.
+
+---
+
 Now, immagine that you needed to test code in items.go for
 some reason. Well, you could do that by stubbing out "datastore\_v3" service
 methods. For instance, items_test.go:
@@ -297,8 +315,6 @@ For more examples see:
 
 
 ## Alternatives
-
----
 
 You might also want to check out other projects:
 
