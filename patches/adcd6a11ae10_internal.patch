@@ -1,0 +1,11 @@
+diff -r adcd6a11ae10 appengine_internal/internal.go
+--- a/appengine_internal/internal.go	Fri May 03 11:54:12 2013 +1000
++++ b/appengine_internal/internal.go	Thu May 30 16:06:24 2013 +0200
+@@ -202,3 +202,7 @@
+ func RegisterAPIOverride(service, method string, f func(proto.Message, proto.Message, *CallOptions) error) {
+ 	apiOverrides[struct{ service, method string }{service, method}] = f
+ }
++
++func UnregisterAPIOverride(service, method string) {
++	delete(apiOverrides, struct{ service, method string }{service, method})
++}

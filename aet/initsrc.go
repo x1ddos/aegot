@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	patchesUrl     = "https://raw.github.com/crhym3/aegot/master/patches/"
+	patchesRoot    = "https://raw.github.com/crhym3/aegot/master/patches/"
 	defaultRepoUrl = "https://code.google.com/p/appengine-go/"
 	defaultVer     = "1.8.0"
 	// Revision, url and dest dir are appended in parseArgs().
@@ -21,64 +21,95 @@ const (
 	defaultUpdateCmd = "hg update -r"
 )
 
+type singlePatch struct {
+	// relative to patchesRoot
+	src string
+	// relative to "appengineDir/src"
+	dst   string
+	bytes []byte
+}
+
+type patchSet struct {
+	patches []*singlePatch
+	// revision number from repoUrl
+	rev string
+}
+
 var (
 	repoUrl   string
 	repoRev   string
 	cloneCmd  string
 	updateCmd string
 
-	// Relative to "appengineDir/src"
-	api_dev_dot_go = filepath.Join("appengine_internal", "api_dev.go")
-
-	// App Engine Go release version => repo revision map.
-	// These are taken from defaultRepoUrl.
-	releaseToRev = map[string]string{
-		"1.8.0": "adcd6a11ae10",
+	// App Engine Go release version => patchset map.
+	// Revisions here are taken from defaultRepoUrl.
+	patchesMap = map[string]*patchSet{
+		"1.8.0": {
+			rev: "adcd6a11ae10",
+			patches: []*singlePatch{
+				{src: "api_dev.go", dst: "appengine_internal/api_dev.go"},
+				{src: "internal.go", dst: "appengine_internal/internal.go"},
+			},
+		},
 	}
 )
 
 func initSourcesCommand() {
-	checkInitSrcArgs()
-	if err := os.MkdirAll(appengineDir, 0755); err != nil {
+	ps, err := findPatchSet(repoRev)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	srcDir := filepath.Join(appengineDir, "src")
-	api_dev_dot_go = filepath.Join(srcDir, api_dev_dot_go)
+	if err = os.MkdirAll(appengineDir, 0755); err != nil {
+		log.Fatal(err)
+	}
 
-	patchedFile := fmt.Sprintf("api_dev_%s.go", repoRev)
-	ch := make(chan interface{}, 1)
-	go fetchPatch(patchedFile, ch)
+	c := make(chan *singlePatch, len(ps.patches))
+	errc := make(chan error, len(ps.patches))
+	for _, sp := range ps.patches {
+		go fetchPatch(sp, ps.rev, c, errc)
+	}
 
 	// clone appengine-go repo
 	var (
-		cmd []string
-		f   func(*exec.Cmd)
+		srcDir = filepath.Join(appengineDir, "src")
+		cmd    []string
+		f      func(*exec.Cmd)
 	)
 	if isExist(srcDir) {
-		cmd = []string{updateCmd, repoRev}
+		cmd = []string{updateCmd, ps.rev}
 		f = func(c *exec.Cmd) {
 			c.Dir = srcDir
 		}
 	} else {
-		cmd = []string{cloneCmd, repoRev, repoUrl, srcDir}
+		cmd = []string{cloneCmd, ps.rev, repoUrl, srcDir}
 	}
 	cmd = strings.Split(strings.Join(cmd, " "), " ")
 	log.Print(cmd)
 	runCmd(cmd, f)
 
-	// "patch" api_dev.go
-	log.Printf("Patching %s with %s", api_dev_dot_go, patchedFile)
-	val := <-ch
-	if err, isErr := val.(error); isErr {
-		log.Fatal(err)
-	}
-	file, err := os.Create(api_dev_dot_go)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if _, err := file.Write(val.([]byte)); err != nil {
-		log.Fatal(err)
+	// "patch" files
+	count := 0
+	for {
+		var sp *singlePatch
+		select {
+		case err = <-errc:
+			log.Fatal(err)
+		case sp = <-c:
+			log.Printf("Patching %s with %s", sp.dst, sp.src)
+			dst := filepath.Join(appengineDir, "src", sp.dst)
+			file, err := os.Create(dst)
+			if err != nil {
+				log.Fatal(err)
+			}
+			if _, err := file.Write(sp.bytes); err != nil {
+				log.Fatal(err)
+			}
+		}
+		count += 1
+		if count == len(ps.patches) {
+			break
+		}
 	}
 
 	msg := "Done!"
@@ -98,44 +129,45 @@ func initSourcesCommand() {
 	log.Print(msg)
 }
 
-func checkInitSrcArgs() {
-	if strings.ContainsRune(repoRev, '.') {
-		var ok bool
-		if repoRev, ok = releaseToRev[repoRev]; !ok {
-			log.Fatal("Unknown SDK release version")
-		}
-	} else {
-		var found bool
-		for _, v := range releaseToRev {
-			if v == repoRev {
-				found = true
-				break
-			}
-		}
-		if !found {
-			log.Printf("WARNING: Unknown revision %q", repoRev)
+// rev can be either GAE release version (e.g. "1.8.0")
+// or a commit revision (e.g. "adcd6a11ae10").
+func findPatchSet(rev string) (*patchSet, error) {
+	if strings.ContainsRune(rev, '.') {
+		if ps, ok := patchesMap[rev]; !ok {
+			return nil, fmt.Errorf("Unknown SDK release version %q", rev)
+		} else {
+			return ps, nil
 		}
 	}
+
+	for _, v := range patchesMap {
+		if v.rev == rev {
+			return v, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Unknown revision number %q", rev)
 }
 
-func fetchPatch(patchName string, c chan interface{}) {
-	url := patchesUrl + patchName
+func fetchPatch(sp *singlePatch, rev string, c chan *singlePatch, errc chan error) {
+	// url := patchesRoot + rev + "_" + sp.src
+	url := "https://raw.github.com/crhym3/aegot/master/patches/api_dev_adcd6a11ae10.go"
 	resp, err := http.Get(url)
 	if err != nil {
-		c <- err
+		errc <- err
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		c <- fmt.Errorf("Bad response code (%d) from %s", resp.StatusCode, url)
+		errc <- fmt.Errorf("Bad response code (%d) from %s", resp.StatusCode, url)
 		return
 	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		c <- err
+
+	if sp.bytes, err = ioutil.ReadAll(resp.Body); err != nil {
+		errc <- err
 		return
 	}
-	c <- body
+	c <- sp
 }
 
 func init() {
