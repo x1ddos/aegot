@@ -150,8 +150,7 @@ func findPatchSet(rev string) (*patchSet, error) {
 }
 
 func fetchPatch(sp *singlePatch, rev string, c chan *singlePatch, errc chan error) {
-	// url := patchesRoot + rev + "_" + sp.src
-	url := "https://raw.github.com/crhym3/aegot/master/patches/api_dev_adcd6a11ae10.go"
+	url := patchesRoot + rev + "_" + sp.src
 	resp, err := http.Get(url)
 	if err != nil {
 		errc <- err
