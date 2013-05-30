@@ -60,7 +60,7 @@ Let's say I'm in my app root which has a subdir called "myapp" (from the example
 
 Sample test from the above will be able to run now with `aet test ./myapp`, but "aet test" doesn't do much actually.
 It only manipulates GOPATH env variable and adds appengine-go local clone path to it.
-So, alternatively, tests can be run with e.g. `GOPATH=$GOPATH:$GOPATH/appengine-go/src go test ./myapp`
+So, alternatively, tests can be run with e.g. `GOPATH=$GOPATH:$GOPATH/appengine-go go test ./myapp`
 
 ```sh
 $ aet -h
