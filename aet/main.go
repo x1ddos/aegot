@@ -40,14 +40,15 @@ func parseArgs() {
 func init() {
 	defAppengineDir := os.Getenv("APPENGINE_GO_SRC")
 	if defAppengineDir == "" {
-		defAppengineDir = filepath.Join(os.Getenv("GOPATH"), "src", "appengine-go")
+		gop := strings.Split(os.Getenv("GOPATH"), string(os.PathListSeparator))[0]
+		defAppengineDir = filepath.Join(gop, "src", "appengine-go")
 	}
 	flags.StringVar(&appengineDir, "d", defAppengineDir,
 		"expect appengine-go sources to be in d/src; required")
 
 	flags.Usage = func() {
 		fmt.Fprintf(os.Stderr,
-			"Usage: %s {init|test} [flags] ./path/to/*_test.go\n", os.Args[0])
+			"Usage: %s [flags] {init|test} ./path/to/*_test.go\n", os.Args[0])
 		flags.PrintDefaults()
 	}
 }

@@ -60,6 +60,8 @@ func initSourcesCommand() {
 		log.Fatal(err)
 	}
 
+	log.Printf("appengine-go dir: %s", appengineDir)
+
 	if err = os.MkdirAll(appengineDir, 0755); err != nil {
 		log.Fatal(err)
 	}
