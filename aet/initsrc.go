@@ -14,7 +14,7 @@ import (
 const (
 	patchesRoot    = "https://raw.github.com/crhym3/aegot/master/patches/"
 	defaultRepoUrl = "https://code.google.com/p/appengine-go/"
-	defaultVer     = "1.8.0"
+	defaultVer     = "1.8.1"
 	// Revision, url and dest dir are appended in parseArgs().
 	// Complete cmd will look like this: "hg clone -u rev URL appengineDir"
 	defaultCloneCmd  = "hg clone -u"
@@ -46,6 +46,13 @@ var (
 	patchesMap = map[string]*patchSet{
 		"1.8.0": {
 			rev: "adcd6a11ae10",
+			patches: []*singlePatch{
+				{src: "api_dev.go", dst: "appengine_internal/api_dev.go"},
+				{src: "internal.go", dst: "appengine_internal/internal.go"},
+			},
+		},
+		"1.8.1": {
+			rev: "e89a2af5b0d5",
 			patches: []*singlePatch{
 				{src: "api_dev.go", dst: "appengine_internal/api_dev.go"},
 				{src: "internal.go", dst: "appengine_internal/internal.go"},

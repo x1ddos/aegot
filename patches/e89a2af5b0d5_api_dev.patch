@@ -1,0 +1,113 @@
+diff -r adcd6a11ae10 appengine_internal/api_dev.go
+--- a/appengine_internal/api_dev.go	Fri May 03 11:54:12 2013 +1000
++++ b/appengine_internal/api_dev.go	Wed May 29 15:27:01 2013 +0200
+@@ -26,7 +26,7 @@
+ // IsDevAppServer returns whether the App Engine app is running in the
+ // development App Server.
+ func IsDevAppServer() bool {
+-	return true
++	return IsDev
+ }
+ 
+ // serveHTTP serves App Engine HTTP requests.
+@@ -52,13 +52,15 @@
+ 	// If the user's application has a transitive dependency on appengine_internal
+ 	// then this init will be called before any user code. The user application
+ 	// should also not be reading from stdin.
+-	c := readConfig(os.Stdin)
+-	instanceConfig.AppID = string(c.AppId)
+-	instanceConfig.APIPort = int(*c.ApiPort)
+-	instanceConfig.VersionID = string(c.VersionId)
+-	instanceConfig.InstanceID = *c.InstanceId
+-	instanceConfig.Datacenter = *c.Datacenter
+-
++	if c := readConfig(os.Stdin); c != nil {
++		instanceConfig.AppID = string(c.AppId)
++		instanceConfig.APIPort = int(*c.ApiPort)
++		instanceConfig.VersionID = string(c.VersionId)
++		instanceConfig.InstanceID = *c.InstanceId
++		instanceConfig.Datacenter = *c.Datacenter
++	} else {
++		StubConfig("s~test", "v.123456789", "t1", "us1", 0)
++	}
+ 	apiAddress = fmt.Sprintf("http://localhost:%d", instanceConfig.APIPort)
+ 	RegisterHTTPFunc(serveHTTP)
+ }
+@@ -83,15 +85,10 @@
+ 			r.Header[name] = values
+ 		}
+ 	}
+-	ctxsMu.Lock()
+-	ctxs[r] = &context{req: &creq}
+-	ctxsMu.Unlock()
+ 
++	CreateContext(r, &creq)
+ 	http.DefaultServeMux.ServeHTTP(w, r)
+-
+-	ctxsMu.Lock()
+-	delete(ctxs, r)
+-	ctxsMu.Unlock()
++	DeleteContext(r)
+ }
+ 
+ var (
+@@ -112,6 +109,8 @@
+ 		Datacenter string
+ 		APIPort    int
+ 	}
++
++	IsDev = true
+ )
+ 
+ func readConfig(r io.Reader) *rpb.Config {
+@@ -119,6 +118,9 @@
+ 	if err != nil {
+ 		log.Fatal("appengine: could not read from stdin: ", err)
+ 	}
++	if len(raw) == 0 {
++		return nil
++	}
+ 
+ 	b := make([]byte, base64.StdEncoding.DecodedLen(len(raw)))
+ 	n, err := base64.StdEncoding.Decode(b, raw)
+@@ -134,6 +136,16 @@
+ 	return config
+ }
+ 
++// Updates app instance config with values provided in the args.
++// Useful when running tests.
++func StubConfig(appId, verId, instId, dc string, apiPort int) {
++	instanceConfig.AppID = appId
++	instanceConfig.VersionID = verId
++	instanceConfig.InstanceID = instId
++	instanceConfig.Datacenter = dc
++	instanceConfig.APIPort = apiPort
++}
++
+ // initAPI has no work to do in the development server.
+ // TODO: Get rid of initAPI everywhere.
+ func initAPI(netw, addr string) {
+@@ -197,6 +209,23 @@
+ 	return c
+ }
+ 
++func CreateContext(orig *http.Request, creq *http.Request) *context {
++	if creq == nil {
++		creq = orig
++	}
++	ctxsMu.Lock()
++	defer ctxsMu.Unlock()
++	ctx := &context{req: creq}
++	ctxs[orig] = ctx
++	return ctx
++}
++
++func DeleteContext(orig *http.Request) {
++	ctxsMu.Lock()
++	delete(ctxs, orig)
++	ctxsMu.Unlock()	
++}
++
+ func (c *context) Call(service, method string, in, out ProtoMessage, opts *CallOptions) error {
+ 	if service == "__go__" {
+ 		if method == "GetNamespace" {
